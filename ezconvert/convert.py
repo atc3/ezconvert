@@ -6,10 +6,15 @@ import logging
 import numpy as np
 import os
 import pandas as pd
+import pkg_resources
 import sys
 import yaml
 
 logger = logging.getLogger('root')
+
+provided_converters = [
+  'mq2pin'
+]
   
 def convert():
   # load command-line args
@@ -18,9 +23,8 @@ def convert():
   parser.add_argument('-v', '--verbose', action='store_true', default=False,
     help='Run in verbose mode. If piping output from stdout to a file, leave this off to exclude all logging messages.')
 
-  parser.add_argument('--config-file', required=True, 
-    type=argparse.FileType('r', encoding='UTF-8'), 
-    help='Path to conversion configuration script. See list of converters in converters/ folder')
+  parser.add_argument('--config-file', required=True, type=str, 
+    help='One of these converters: [' + ' '.join(provided_converters) + '], or a path to conversion configuration script. See list of converters in converters/ folder')
   input_group = parser.add_mutually_exclusive_group(required=True)
   input_group.add_argument('--input-list', type=argparse.FileType('r', encoding='UTF-8'),
     help='List of input files, in YAML format.')
@@ -56,9 +60,15 @@ def convert():
   logger.info(' '.join(sys.argv[0:]))
 
   # load vars from the config file
-  logger.info('Loading config file functions from {}.'.format(args.config_file.name))
-  exec(compile(open(args.config_file.name, 'rb').read(), args.config_file.name, 'exec'), 
-    globals())
+  config_file = ''
+  if args.config_file in provided_converters:
+    config_file = pkg_resources.resource_string('ezconvert', '/'.join(('converters', args.config_file + '.py')))
+  else:
+    logger.info('Loading config file functions from {}.'.format(args.config_file))
+    with open(args.config_file, 'rb') as f:
+      config_file = f.read()
+
+  exec(compile(config_file, args.config_file, 'exec'), globals())
 
   # read inputs, either from the input list or from the command line
   _input = []

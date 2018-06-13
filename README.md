@@ -26,7 +26,8 @@ optional arguments:
   -v, --verbose         Run in verbose mode. If piping output from stdout to a
                         file, leave this off to exclude all logging messages.
   --config-file CONFIG_FILE
-                        Path to conversion configuration script. See list of
+                        One of these converters: [mq2pin], or a path to
+                        conversion configuration script. See list of
                         converters in converters/ folder
   --input-list INPUT_LIST
                         List of input files, in YAML format.
@@ -37,6 +38,18 @@ optional arguments:
                         stdout
 ```
 
+Example:
+
+```
+ezconvert --config-file mq2pin --input-list ./input_list.yaml
+```
+
+```
+ezconvert --config-file path/to/converter.py --input-list ./input_list.yaml
+```
+
+Clone the repo to get the list of existing converters, or write your own.
+
 ### Input List:
 
 The input list is a YAML file, with items in a list like so:
@@ -45,6 +58,10 @@ The input list is a YAML file, with items in a list like so:
 - /path/to/input/file/1.csv
 - /path/to/input/file/2.csv
 - /path/to/input/file/3.csv
+```
+
+```
+ezconvert --config-file path/to/config/file --input-list path/to/input_list.yaml
 ```
 
 You can also list these files in the command-line with the "-i" option
@@ -85,9 +102,9 @@ A function is a mapping function, which is passed two variables: ```df```, the i
 
 ```
 
-def __label(df, df_out):
-  # target or decoy
-  label = df['Leading razor protein'].str.contains('REV__').values.astype(int)
+def __label(input, output):
+  # target or decoy?
+  label = input['Protein'].str.contains('DECOY__').values.astype(int)
   label[label==1] = -1
   label[label==0] = 1
 
@@ -95,10 +112,13 @@ def __label(df, df_out):
 
 # values can be string, function, or lambda
 transformations = {
-  # Unique ID for each MS2 spectra
+  # a string copies values from the input
   'SpecId': 'id',
-  # Target or Decoy
+  # specify a defined function, with input and output as the two arguments
   'Label': __label,
-  # ExpMass - measured mass of precursor ion (measured m/z * charge)
-  'ExpMass': (lambda df, df_out: df['m/z'] * df['Charge'])
+  # specify a lambda function, with input and output as the two arguments
+  'ExpMass': (lambda input, output: df['m/z'] * df['Charge']),
+  # reference output columns, as long as they are listed before this item
+  # (items executed sequentially)
+  'ExpMassShift': (lambda input, output: output['ExpMass'] + input['MassShift'])
 }
