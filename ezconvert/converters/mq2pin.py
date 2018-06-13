@@ -5,10 +5,18 @@ import numpy as np
 import pandas as pd
 
 ## I/O configuration
+
 # column delimiters for input and output files
 input_sep = '\t'
 output_sep = '\t'
 
+# print row names/indices?
+write_row_names=False
+
+# print the column titles?
+write_header=True
+
+# leave empty to not print
 additional_header = [
   # empty for specid, label, scannr, expmass, calcmass, 
   # and doc features (RT and mass calibration) - 7 blanks total

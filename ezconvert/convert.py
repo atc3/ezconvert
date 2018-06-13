@@ -13,7 +13,8 @@ import yaml
 logger = logging.getLogger('root')
 
 provided_converters = [
-  'mq2pin'
+  'mq2pin',
+  'mq2pcq'
 ]
   
 def convert():
@@ -142,11 +143,12 @@ def convert():
   headers = ''
 
   # column headers
-  for i, col in enumerate(df_out.columns):
-    headers += col
-    if i != (len(df_out.columns)-1):
-      headers += output_sep
-  headers += '\n'
+  if write_header:
+    for i, col in enumerate(df_out.columns):
+      headers += col
+      if i != (len(df_out.columns)-1):
+        headers += output_sep
+    headers += '\n'
 
   # additional header
   if 'additional_headers' in globals() and len(additional_headers) > 0:
@@ -159,12 +161,12 @@ def convert():
   if args.output is None:
     # if none, then just print to stdout
     print(headers, end='')
-    print(df_out.to_string(header=False, index=False, sparsify=False))
+    print(df_out.to_string(header=False, index=write_row_names, sparsify=False))
   else:
     with open(args.output, 'w') as f:
       f.write(headers)
     logger.info('Writing output to {} ...'.format(args.output))
-    df_out.to_csv(args.output, sep=output_sep, header=False, index=False, mode='a')
+    df_out.to_csv(args.output, sep=output_sep, header=False, index=write_row_names, mode='a')
 
 if __name__ == '__main__':
   convert()

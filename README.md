@@ -3,7 +3,7 @@ Convert, filter, and transform tabular data with a simple configuration file
 
 ## Introduction
 
-ezconvert is a simple script that combines tabular input files, filters them, and then transforms values.
+ezconvert is a simple script that combines tabular input files, filters them, and then transforms values. 
 
 Easily program your own converter, and then use it from the command line.
 
@@ -26,7 +26,7 @@ optional arguments:
   -v, --verbose         Run in verbose mode. If piping output from stdout to a
                         file, leave this off to exclude all logging messages.
   --config-file CONFIG_FILE
-                        One of these converters: [mq2pin], or a path to
+                        One of these converters: [mq2pin mq2pcq], or a path to
                         conversion configuration script. See list of
                         converters in converters/ folder
   --input-list INPUT_LIST
@@ -77,6 +77,8 @@ Converters are defined as python scripts, to give this type of configuration fil
 ### I/O Configuration
 - ```input_sep```: delimiter for the input file
 - ```output_sep```: delimiter for the output file
+- ```write_row_names```: write row names/indices (this is passed into pandas serialization functions)
+- ```write_header```: write the column titles as a header row
 - ```additional_header```: additional string, or list of items to be separated by the output delimiter. This is printed after the column name headers, but before the data.
 
 ### Filters
@@ -120,5 +122,6 @@ transformations = {
   'ExpMass': (lambda input, output: df['m/z'] * df['Charge']),
   # reference output columns, as long as they are listed before this item
   # (items executed sequentially)
-  'ExpMassShift': (lambda input, output: output['ExpMass'] + input['MassShift'])
+  'ExpMassShift': (lambda input, output: output['ExpMass'] + input['MassShift']),
+  ...
 }
