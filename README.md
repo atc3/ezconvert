@@ -48,7 +48,7 @@ ezconvert --config-file mq2pin --input-list ./input_list.yaml
 ezconvert --config-file path/to/converter.py --input-list ./input_list.yaml
 ```
 
-Clone the repo to get the list of existing converters, or write your own.
+Use one of the existing converters provided, or create your own and link to it. *WARNING* -- if using someone else's configuration script, be aware that this library executes the configuration script without checking for any malicious activity. Please examine the configuration script to ensure that everything is proper and in order.
 
 ### Input List:
 
