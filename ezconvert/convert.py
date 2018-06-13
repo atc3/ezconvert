@@ -100,7 +100,7 @@ def convert():
   df = df.append(dfa)
 
   # filter observations
-  logger.info('\nFiltering observations...')
+  logger.info('Filtering observations...')
 
   # before we filter, assign every row an ID
   df['id'] = range(0, df.shape[0])
@@ -116,8 +116,11 @@ def convert():
   for i, f in enumerate(filters):
     logger.info('Applying filter #{}: \"{}\"'.format(i+1, f))
     e = filters[f](df)
+    logger.info('Marked {} observations for filtering'.format(np.sum(e)))
     if e is not None:
       df['exclude'] = (df['exclude'] | e)
+
+  logger.info('{} / {} ({:.2%}) observations pass filters'.format(df.shape[0] - df['exclude'].sum(), df.shape[0], (df.shape[0] - df['exclude'].sum()) / df.shape[0]))
 
   # apply exclusion filter
   df = df[~df['exclude']].reset_index(drop=True)
@@ -126,7 +129,7 @@ def convert():
   df_out = pd.DataFrame()
 
   # apply transformations
-  logger.info('\nTransforming data...')
+  logger.info('Transforming data...')
 
   for i, t in enumerate(transformations):
     logger.info('Applying transformation #{}: \"{}\"'.format(i+1, t))
@@ -167,6 +170,8 @@ def convert():
       f.write(headers)
     logger.info('Writing output to {} ...'.format(args.output))
     df_out.to_csv(args.output, sep=output_sep, header=False, index=write_row_names, mode='a')
+
+  logger.info("Done!")
 
 if __name__ == '__main__':
   convert()
