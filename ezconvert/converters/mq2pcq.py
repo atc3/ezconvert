@@ -9,6 +9,7 @@ import pandas as pd
 # column delimiters for input and output files
 input_sep = '\t'
 output_sep = '\t'
+output_type = 'txt'
 
 # print row names/indices?
 write_row_names=False
@@ -18,6 +19,9 @@ write_header=False
 
 # leave empty to not print
 additional_header = []
+
+# separate by this value
+sep_by = 'Raw file'
 
 def __carrier_quant(df):
   carrier1 = df['Reporter intensity corrected 0']
@@ -58,5 +62,7 @@ transformations = {
   'PSMId': 'id',
   'Sequence': 'Sequence',
   'RatioValue': sc_to_carrier_ratio,
-  'RatioWeight': 'PIF'
+  'RatioWeight': 'PIF',
+  'Accession': (lambda df, df_out: df['Leading razor protein'].str.split('|').apply((
+    lambda x: x[1] if len(x) is 3 else x[0])))
 }

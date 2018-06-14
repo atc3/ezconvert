@@ -16,6 +16,13 @@ provided_converters = [
   'mq2pin',
   'mq2pcq'
 ]
+
+def write_df_to_file(df, headers, out_path):
+  with open(out_path, 'w') as f:
+    f.write(headers)
+  logger.info('Writing output to {} ...'.format(out_path))
+  df.to_csv(out_path, sep=output_sep, header=False, 
+    index=write_row_names, mode='a')
   
 def convert():
   # load command-line args
@@ -97,6 +104,9 @@ def convert():
 
     dfa = pd.read_csv(f, sep=input_sep, low_memory=False)
 
+    # track input file with input id
+    dfa['input_id'] = i
+
   df = df.append(dfa)
 
   # filter observations
@@ -166,12 +176,37 @@ def convert():
     print(headers, end='')
     print(df_out.to_string(header=False, index=write_row_names, sparsify=False))
   else:
-    with open(args.output, 'w') as f:
-      f.write(headers)
-    logger.info('Writing output to {} ...'.format(args.output))
-    df_out.to_csv(args.output, sep=output_sep, header=False, index=write_row_names, mode='a')
+    if 'sep_by' in globals() and type(sep_by) is str:
+      # separate output files based on a certain column
+      if sep_by in df_out.columns:
+        sep_by_vals = df_out[sep_by]
+      elif sep_by in df.columns:
+        sep_by_vals = df[sep_by]
+      else:
+        raise Exception('File separator not found in the columns of either the input file or the transformed output file.') 
 
-  logger.info("Done!")
+      # create the output path if necessary
+      if not os.path.exists(args.output):
+        logger.info('Path for output folder {} does not exist. Creating...'.format(args.output))
+        os.makedirs(args.output)
+
+      # get unique categories
+      cats = np.unique(sep_by_vals)
+      logger.info('Separating files based on categories: [' + ' '.join(cats) + ']')
+      # iterate over each category
+      for c in cats:
+        out_path = os.path.join(args.output, '{}.{}'.format(c, output_type))
+        logger.info('Saving category file {} to {}'.format(c, out_path))
+        df_a = df_out.loc[sep_by_vals == c]
+        write_df_to_file(df_a, headers, out_path)
+
+    else:
+      # if no separation, then write the entire collated df to file
+      logger.info('Saving combined file to {}'.format(args.output))
+      write_df_to_file(df_out, headers, args.output)
+
+
+  logger.info('Done!')
 
 if __name__ == '__main__':
   convert()

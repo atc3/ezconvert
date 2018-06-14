@@ -77,9 +77,11 @@ Converters are defined as python scripts, to give this type of configuration fil
 ### I/O Configuration
 - ```input_sep```: delimiter for the input file
 - ```output_sep```: delimiter for the output file
+- ```output_type```: type ('txt', 'csv') for the output file. This is only used when separating output files.
 - ```write_row_names```: write row names/indices (this is passed into pandas serialization functions)
 - ```write_header```: write the column titles as a header row
 - ```additional_header```: additional string, or list of items to be separated by the output delimiter. This is printed after the column name headers, but before the data.
+- ```sep_by```: column name that is the basis of separating output files. for example, ```sep_by='Raw file'``` will separate output files by the ```Raw file``` column. In this mode, the output ```-o``` is treated as a folder, and not a file.
 
 ### Filters
 

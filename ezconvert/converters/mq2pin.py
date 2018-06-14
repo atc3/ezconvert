@@ -9,6 +9,7 @@ import pandas as pd
 # column delimiters for input and output files
 input_sep = '\t'
 output_sep = '\t'
+output_type = '.txt'
 
 # print row names/indices?
 write_row_names=False
