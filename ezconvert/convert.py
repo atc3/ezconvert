@@ -14,7 +14,8 @@ logger = logging.getLogger('root')
 
 provided_converters = [
   'mq2pin',
-  'mq2pcq'
+  'mq2pcq',
+  'mq2psea'
 ]
 
 def write_df_to_file(df, headers, out_path):
@@ -104,6 +105,8 @@ def convert():
 
     dfa = pd.read_csv(f, sep=input_sep, low_memory=False)
 
+    logger.info('Read {} PSMs'.format(dfa.shape[0]))
+
     # track input file with input id
     dfa['input_id'] = i
 
@@ -144,8 +147,20 @@ def convert():
   for i, t in enumerate(transformations):
     logger.info('Applying transformation #{}: \"{}\"'.format(i+1, t))
     trans = transformations[t]
+    # if transformation is a string, then simply copy the old column
+    # to the new output one
     if type(trans) is str:
       df_out[t] = df[trans]
+    # if transformation is a function, and the transformation name
+    # begins with a '__', then apply the transformation over the
+    # entire data frame.
+    # this is useful for doing matrix maths that spans over multiple
+    # columns, or rows, or something that involves more than just one
+    # column.
+    elif callable(trans) and t[0:2] == '__':
+      df_out = trans(df, df_out)
+    # if transformation is a function, then call that function to
+    # generate the new column for the output
     elif callable(trans):
       df_out[t] = trans(df, df_out)
     else:
