@@ -35,15 +35,16 @@ def __sc_quant(df):
 
 def __fdr_001(df):
   # get PEP, ceil to 1
-  pep = df['PEP'].values
+  #pep = df['PEP'].values
+  pep = df['pep_updated'].values
   pep[pep > 1] = 1
 
   # magic!!!
   # basically, we need to cumulatively sum the PEP to get the FDR
   # and then map back the cumulatively summed FDR to its original PEP
-  qval = np.cumsum(pep[np.argsort(pep)])[np.argsort(pep).argsort()]
+  qval = (np.cumsum(pep[np.argsort(pep)]) / np.arange(1, df.shape[0]+1))[np.argsort(np.argsort(pep))]
 
-  return (qval < 0.01)
+  return (qval > 0.01)
 
 filters = {
   'remove_decoy': (lambda df: df['Leading razor protein'].str.contains('REV__').values),
