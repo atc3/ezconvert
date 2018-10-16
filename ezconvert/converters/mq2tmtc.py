@@ -85,7 +85,7 @@ transformations = {
   # maxquant mass error is still bugged with regard to TMT
   # IDK what is a good default for this. maybe 0? maybe the average of the mass
   # errors of the fragments in the MS/MS spectra? (we can calculate that)
-  'PPM': (lambda df, df_out: 0),
+  'PPM': 0,
   #'Dalton': 0,
   #'Xcorr': 'Score',
   #'∆corr': 'Delta score',

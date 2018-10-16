@@ -166,6 +166,11 @@ def convert():
     # generate the new column for the output
     elif callable(trans):
       df_out[t] = trans(df, df_out)
+    # if transformation is a constant number, then just set all values
+    # of that name to the specified number
+    # don't have to vectorize, pandas will handle that.
+    elif type(trans) is int or type(trans) is float:
+      df_out[t] = trans
     else:
       raise Exception('Invalid transformation type: {}. Please provide either a string or a function'.format(type(trans)))
 
