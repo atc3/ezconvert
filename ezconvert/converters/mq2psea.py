@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import csv
 import numpy as np
 import pandas as pd
 
@@ -9,7 +10,7 @@ import pandas as pd
 # column delimiters for input and output files
 input_sep = '\t'
 output_sep = '\t'
-output_type = 'txt'
+output_type = '.txt'
 
 # print row names/indices?
 write_row_names=False
@@ -17,11 +18,14 @@ write_row_names=False
 # print the column titles?
 write_header=False
 
+# quoting?
+quoting=csv.QUOTE_MINIMAL
+
 # leave empty to not print
 additional_header = []
 
 def __sqc_set(df):
-  return ~df['Raw file'].str.contains('SQC')
+  return ((~df['Raw file'].str.contains('SQC')) | df['Raw file'].str.contains('SQC9'))
 
 def __sc_quant(df):
   dcols = df.columns[df.columns.str.contains('Reporter intensity corrected')]
@@ -49,19 +53,25 @@ def __new_fdr_001(df):
 
   return (qval > 0.01)
 
+def __prot_fdr_001(df):
+  # filter at protein FDR of 1%
+  return (pd.isnull(df['prot_fdr']) | (df['prot_fdr'] > 0.01))
+
 # only select de novo proteins
 def __de_novo_proteins(df):
   # extract uniprot accession number
-  #Proteins = df['Leading razor protein'].str.split("|").apply((lambda x: x[1] if len(x) == 3 else x[0]))
+  Proteins = df['Leading razor protein'].str.split("|").apply((lambda x: x[1] if len(x) == 3 else x[0]))
+  # by not matching a dash we are ignoring isoforms
+  Proteins = Proteins.str.extract('([A-Z0-9_]+)')
   # or, extract gene name (protein symbol)
-  Proteins = df['Leading razor protein'].str.extract(r'([A-Z0-9-]+)_HUMAN', expand=False)
+  #Proteins = df['Leading razor protein'].str.extract(r'([A-Z0-9-]+)_HUMAN', expand=False)
 
   # grab PEPs
   pep = df['PEP']
-  pep[pep > 1] = 1
+  #pep[pep > 1] = 1
 
   df_a = pd.concat([Proteins, pep], axis=1)
-  df_a.columns.values = ['protein', 'pep']
+  df_a.columns = ['protein', 'pep']
 
   prots = Proteins.unique()
   prots = prots[~pd.isnull(prots)]
@@ -84,8 +94,8 @@ def __de_novo_proteins(df):
   return exclude
   """
 def __de_novo_peptides(df):
-  Peptides = df['Modified sequence']
-  pep = df['PEP']
+  Peptides = df['Modified sequence'].copy()
+  pep = df['PEP'].copy()
   pep[pep > 1] = 1
 
   df_a = pd.concat([Peptides, pep], axis=1)
@@ -102,10 +112,11 @@ filters = {
   'remove_contaminant': (lambda df: df['Leading razor protein'].str.contains('CON__').values),
   'sqc_set': __sqc_set,
   'sc_quant': __sc_quant,
+  'prot_fdr': __prot_fdr_001,
   #'de_novo_proteins': __de_novo_proteins,
-  'de_novo_peptides': __de_novo_peptides,
-  'new_fdr_001': __new_fdr_001
-  #'fdr_001': __fdr_001
+  #'de_novo_peptides': __de_novo_peptides,
+  #'new_fdr_001': __new_fdr_001
+  'fdr_001': __fdr_001
 }
 
 def __sc_ratios(df, df_out):
@@ -113,9 +124,11 @@ def __sc_ratios(df, df_out):
   # U - 129N, 130N, 131N
   
   # extract uniprot accession number
-  #Proteins = df['Leading razor protein'].str.split('|').apply((lambda x: x[1] if len(x) == 3 else x[0]))
+  Proteins = df['Leading razor protein'].str.split('|').apply((lambda x: x[1] if len(x) == 3 else x[0]))
+  # by not matching a dash we are ignoring isoforms
+  Proteins = Proteins.str.extract('([A-Z0-9_]+)')
   # or, extract gene name (protein symbol)
-  Proteins = df['Leading razor protein'].str.extract(r'([A-Z0-9-]+)_HUMAN', expand=False)
+  #Proteins = df['Leading razor protein'].str.extract(r'([A-Z0-9-]+)_HUMAN', expand=False)
 
   dcols = df.columns[df.columns.str.contains('Reporter intensity corrected')]
   dmat = df[dcols[4:10]].values
@@ -142,6 +155,10 @@ def __sc_ratios(df, df_out):
     prot_ratios[i,:] = np.apply_along_axis(np.mean, 0, ratio_mat[p_inds,:])
   
   df_a = pd.DataFrame(prot_ratios)
+
+  # shuffle prot list for a null control?
+  np.random.shuffle(prot_list)
+
   df_a = pd.concat([pd.Series(prot_list), df_a], axis=1)
 
   return df_a

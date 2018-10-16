@@ -2,6 +2,7 @@
 # coding: utf-8
 
 import argparse
+import csv
 import logging
 import numpy as np
 import os
@@ -15,7 +16,9 @@ logger = logging.getLogger('root')
 provided_converters = [
   'mq2pin',
   'mq2pcq',
-  'mq2psea'
+  'mq2psea',
+  'mq2elutator_trainer',
+  'mq2tmtc'
 ]
 
 def write_df_to_file(df, headers, out_path):
@@ -23,7 +26,7 @@ def write_df_to_file(df, headers, out_path):
     f.write(headers)
   logger.info('Writing output to {} ...'.format(out_path))
   df.to_csv(out_path, sep=output_sep, header=False, 
-    index=write_row_names, mode='a')
+    index=write_row_names, mode='a', quoting=quoting)
   
 def convert():
   # load command-line args
@@ -173,7 +176,10 @@ def convert():
   # column headers
   if write_header:
     for i, col in enumerate(df_out.columns):
-      headers += col
+      if quoting == csv.QUOTE_ALL or quoting == csv.QUOTE_NONNUMERIC:
+        headers += ("\"" + col + "\"")
+      else: 
+        headers += col
       if i != (len(df_out.columns)-1):
         headers += output_sep
     headers += '\n'
@@ -210,7 +216,7 @@ def convert():
       logger.info('Separating files based on categories: [' + ' '.join(cats) + ']')
       # iterate over each category
       for c in cats:
-        out_path = os.path.join(args.output, '{}.{}'.format(c, output_type))
+        out_path = os.path.join(args.output, '{}{}'.format(c, output_type))
         logger.info('Saving category file {} to {}'.format(c, out_path))
         df_a = df_out.loc[sep_by_vals == c]
         write_df_to_file(df_a, headers, out_path)

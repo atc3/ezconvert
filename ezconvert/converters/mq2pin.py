@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import csv
 import numpy as np
 import pandas as pd
 
@@ -16,6 +17,9 @@ write_row_names=False
 
 # print the column titles?
 write_header=True
+
+# quoting?
+quoting=csv.QUOTE_MINIMAL
 
 # leave empty to not print
 additional_header = [

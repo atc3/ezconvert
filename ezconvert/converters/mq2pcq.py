@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # coding: utf-8
 
+import csv
 import numpy as np
 import pandas as pd
 
@@ -9,13 +10,16 @@ import pandas as pd
 # column delimiters for input and output files
 input_sep = '\t'
 output_sep = '\t'
-output_type = 'txt'
+output_type = '.txt'
 
 # print row names/indices?
 write_row_names=False
 
 # print the column titles?
 write_header=False
+
+# quoting?
+quoting=csv.QUOTE_MINIMAL
 
 # leave empty to not print
 additional_header = []
