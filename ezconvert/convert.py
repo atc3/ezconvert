@@ -218,7 +218,8 @@ def convert():
 
       # get unique categories
       cats = np.unique(sep_by_vals)
-      logger.info('Separating files based on categories: [' + ' '.join(cats) + ']')
+      logger.info('Splitting observations into separate files by "' + sep_by + '"')
+      logger.info('Categories: [' + ' '.join(cats) + ']')
       # iterate over each category
       for c in cats:
         out_path = os.path.join(args.output, '{}{}'.format(c, output_type))
