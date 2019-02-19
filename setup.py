@@ -63,7 +63,7 @@ setup(
   
   entry_points={
     'console_scripts': [
-      ('ezconvert=ezconvert.convert:convert')
+      ('ezconvert=ezconvert.convert:main')
     ]
   }
 
