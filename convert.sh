@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
 
-from ezconvert.convert import convert
+from ezconvert.convert import main
 
-convert()
+main()

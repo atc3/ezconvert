@@ -28,69 +28,30 @@ def write_df_to_file(df, headers, out_path):
   df.to_csv(out_path, sep=output_sep, header=False, 
     index=write_row_names, mode='a', quoting=quoting)
   
-def convert():
-  # load command-line args
-  parser = argparse.ArgumentParser()  
+def convert(config_file_name=None, input_list=None, input_file=None, output=None):
 
-  parser.add_argument('-v', '--verbose', action='store_true', default=False,
-    help='Run in verbose mode. If piping output from stdout to a file, leave this off to exclude all logging messages.')
-
-  parser.add_argument('--config-file', required=True, type=str, 
-    help='One of these converters: [' + ' '.join(provided_converters) + '], or a path to conversion configuration script. See list of converters in converters/ folder')
-  input_group = parser.add_mutually_exclusive_group(required=True)
-  input_group.add_argument('--input-list', type=argparse.FileType('r', encoding='UTF-8'),
-    help='List of input files, in YAML format.')
-  input_group.add_argument('-i', '--input', type=argparse.FileType('r', encoding='UTF-8'),
-    nargs='+', help='List of input files, separated by spaces.')
-
-  parser.add_argument('-o', '--output', type=str, 
-    help='Path to output data. Default: Leave empty to print to stdout')
-
-  args = parser.parse_args()
-
-  # initialize logger
-  # set up logger
-  for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler) 
-   
-  logFormatter = logging.Formatter('%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s')
-  logger = logging.getLogger('root')
-
-  if args.verbose: logger.setLevel(logging.DEBUG)
-  else: logger.setLevel(logging.WARNING)
-
-  """
-  if log_to_file:
-    fileHandler = logging.FileHandler(log_file_path, mode='w')
-    fileHandler.setFormatter(logFormatter)
-    logger.addHandler(fileHandler)
-  """
-
-  consoleHandler = logging.StreamHandler()
-  consoleHandler.setFormatter(logFormatter)
-  logger.addHandler(consoleHandler)
-  logger.info(' '.join(sys.argv[0:]))
+  if config_file_name is None:
+    raise Exception('No configuration file (existing name or file path) provided.')
 
   # load vars from the config file
-  config_file = ''
-  if args.config_file in provided_converters:
-    config_file = pkg_resources.resource_string('ezconvert', '/'.join(('converters', args.config_file + '.py')))
+  if config_file_name in provided_converters:
+    config_file = pkg_resources.resource_string('ezconvert', '/'.join(('converters', config_file_name + '.py')))
   else:
-    logger.info('Loading config file functions from {}.'.format(args.config_file))
-    with open(args.config_file, 'rb') as f:
+    logger.info('Loading config file functions from {}.'.format(config_file_name))
+    with open(config_file_name, 'rb') as f:
       config_file = f.read()
 
-  exec(compile(config_file, args.config_file, 'exec'), globals())
+  exec(compile(config_file, config_file_name, 'exec'), globals())
 
   # read inputs, either from the input list or from the command line
   _input = []
-  if args.input_list is not None:
-    logger.info('Reading in input files from input list {}.'.format(args.input_list.name))
-    with open(args.input_list.name, 'r') as f:
+  if input_list is not None:
+    logger.info('Reading in input files from input list {}.'.format(input_list.name))
+    with open(input_list.name, 'r') as f:
       _input = yaml.load(f)
   else:
     logger.info('Reading in input files from command line.')
-    _input = [f.name for f in args.input]
+    _input = [f.name for f in input_file]
 
   if len(_input) == 0:
     raise Exception('No input files provided, either from the input list or the command line.')
@@ -197,10 +158,9 @@ def convert():
         headers += output_sep
     headers += '\n'
 
-  if args.output is None:
-    # if none, then just print to stdout
-    print(headers, end='')
-    print(df_out.to_string(header=False, index=write_row_names, sparsify=False))
+  if output is None:
+    # if none, then return the dataframe
+    return (df_out, headers)
   else:
     if 'sep_by' in globals() and type(sep_by) is str:
       # separate output files based on a certain column
@@ -212,9 +172,9 @@ def convert():
         raise Exception('File separator not found in the columns of either the input file or the transformed output file.') 
 
       # create the output path if necessary
-      if not os.path.exists(args.output):
-        logger.info('Path for output folder {} does not exist. Creating...'.format(args.output))
-        os.makedirs(args.output)
+      if not os.path.exists(output):
+        logger.info('Path for output folder {} does not exist. Creating...'.format(output))
+        os.makedirs(output)
 
       # get unique categories
       cats = np.unique(sep_by_vals)
@@ -222,18 +182,70 @@ def convert():
       logger.info('Categories: [' + ' '.join(cats) + ']')
       # iterate over each category
       for c in cats:
-        out_path = os.path.join(args.output, '{}{}'.format(c, output_type))
+        out_path = os.path.join(output, '{}{}'.format(c, output_type))
         logger.info('Saving category file {} to {}'.format(c, out_path))
         df_a = df_out.loc[sep_by_vals == c]
         write_df_to_file(df_a, headers, out_path)
 
     else:
       # if no separation, then write the entire collated df to file
-      logger.info('Saving combined file to {}'.format(args.output))
-      write_df_to_file(df_out, headers, args.output)
-
+      logger.info('Saving combined file to {}'.format(output))
+      write_df_to_file(df_out, headers, output)
 
   logger.info('Done!')
+  return None
+
+def main():
+    # load command-line args
+  parser = argparse.ArgumentParser()  
+
+  parser.add_argument('-v', '--verbose', action='store_true', default=False,
+    help='Run in verbose mode. If piping output from stdout to a file, leave this off to exclude all logging messages.')
+
+  parser.add_argument('--config-file', required=True, type=str, 
+    help='One of these converters: [' + ' '.join(provided_converters) + '], or a path to conversion configuration script. See list of converters in converters/ folder')
+  input_group = parser.add_mutually_exclusive_group(required=True)
+  input_group.add_argument('--input-list', type=argparse.FileType('r', encoding='UTF-8'),
+    help='List of input files, in YAML format.')
+  input_group.add_argument('-i', '--input', type=argparse.FileType('r', encoding='UTF-8'),
+    nargs='+', help='List of input files, separated by spaces.')
+
+  parser.add_argument('-o', '--output', type=str, 
+    help='Path to output data. Default: Leave empty to print to stdout')
+
+  args = parser.parse_args()
+
+
+  # initialize logger
+  # set up logger
+  for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler) 
+   
+  logFormatter = logging.Formatter('%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s')
+  logger = logging.getLogger('root')
+
+  if args.verbose: logger.setLevel(logging.DEBUG)
+  else: logger.setLevel(logging.WARNING)
+
+  """
+  if log_to_file:
+    fileHandler = logging.FileHandler(log_file_path, mode='w')
+    fileHandler.setFormatter(logFormatter)
+    logger.addHandler(fileHandler)
+  """
+
+  consoleHandler = logging.StreamHandler()
+  consoleHandler.setFormatter(logFormatter)
+  logger.addHandler(consoleHandler)
+  logger.info(' '.join(sys.argv[0:]))
+
+  (df_out, headers) = convert(config_file_name=args.config_file, input_list=args.input_list, input_file=args.input, output=args.output)
+
+  if args.output is None and df_out is not None:
+    # if none, then just print to stdout
+    print(headers, end='')
+    print(df_out.to_string(header=False, index=write_row_names, sparsify=False))
+
 
 if __name__ == '__main__':
-  convert()
+  main()
