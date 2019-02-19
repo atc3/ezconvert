@@ -3,6 +3,7 @@
 
 import argparse
 import csv
+import io
 import logging
 import numpy as np
 import os
@@ -11,7 +12,7 @@ import pkg_resources
 import sys
 import yaml
 
-from ezconvert.version import __version__
+from .version import __version__
 
 logger = logging.getLogger('root')
 
@@ -30,13 +31,17 @@ def write_df_to_file(df, headers, out_path):
   df.to_csv(out_path, sep=output_sep, header=False, 
     index=write_row_names, mode='a', quoting=quoting)
   
-def convert(config_file_name=None, input_list=None, input_file=None, output=None):
+def convert_files(config_file_name=None, input_list=None, input_files=None, output=None):
 
   if config_file_name is None:
     raise Exception('No configuration file (existing name or file path) provided.')
 
   # load vars from the config file
-  if config_file_name in provided_converters:
+  if isinstance(config_file_name, io.BufferedReader):
+    config_file = config_file_name.read()
+    config_file_name = 'buffer'
+
+  elif config_file_name in provided_converters:
     config_file = pkg_resources.resource_string('ezconvert', '/'.join(('converters', config_file_name + '.py')))
   else:
     logger.info('Loading config file functions from {}.'.format(config_file_name))
@@ -53,7 +58,7 @@ def convert(config_file_name=None, input_list=None, input_file=None, output=None
       _input = yaml.load(f)
   else:
     logger.info('Reading in input files from command line.')
-    _input = [f.name for f in input_file]
+    _input = [f.name for f in input_files]
 
   if len(_input) == 0:
     raise Exception('No input files provided, either from the input list or the command line.')
@@ -242,7 +247,7 @@ def main():
   logger.addHandler(consoleHandler)
   logger.info(' '.join(sys.argv[0:]))
 
-  (df_out, headers) = convert(config_file_name=args.config_file, input_list=args.input_list, input_file=args.input, output=args.output)
+  (df_out, headers) = convert_files(config_file_name=args.config_file, input_list=args.input_list, input_files=args.input, output=args.output)
 
   if args.output is None and df_out is not None:
     # if none, then just print to stdout
