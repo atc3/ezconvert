@@ -11,6 +11,8 @@ import pkg_resources
 import sys
 import yaml
 
+from ezconvert.version import __version__
+
 logger = logging.getLogger('root')
 
 provided_converters = [
@@ -209,6 +211,7 @@ def main():
     help='List of input files, in YAML format.')
   input_group.add_argument('-i', '--input', type=argparse.FileType('r', encoding='UTF-8'),
     nargs='+', help='List of input files, separated by spaces.')
+  parser.add_argument('--version', action='version', version='%(prog)s {version}'.format(version=__version__), help='Display the program\'s version')
 
   parser.add_argument('-o', '--output', type=str, 
     help='Path to output data. Default: Leave empty to print to stdout')
