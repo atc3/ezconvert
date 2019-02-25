@@ -81,7 +81,7 @@ def convert_files(config_file_name=None, input_list=None, input_files=None, outp
     # track input file with input id
     dfa['input_id'] = i
 
-  df = df.append(dfa)
+    df = df.append(dfa)
 
   # filter observations
   logger.info('Filtering observations...')
